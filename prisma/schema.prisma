@@ -21,18 +21,18 @@ enum SubscriptionStatus {
 }
 
 model User {
-  id                 String             @id @default(cuid())
-  email              String             @unique
+  id                 String              @id @default(cuid())
+  email              String              @unique
   name               String?
   passwordHash       String?
   image              String?
-  emailVerified      Boolean            @default(false)
-  stripeCustomerId   String?            @unique
-  subscriptionPlan   SubscriptionPlan   @default(FREE)
+  emailVerified      Boolean             @default(false)
+  stripeCustomerId   String?             @unique
+  subscriptionPlan   SubscriptionPlan    @default(FREE)
   subscriptionStatus SubscriptionStatus?
   subscriptionEnd    DateTime?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   resumes           Resume[]
   interviewSessions InterviewSession[]
@@ -85,7 +85,7 @@ model InterviewSession {
 }
 
 model SavedJob {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
   jobTitle    String
   company     String
@@ -96,14 +96,25 @@ model SavedJob {
   matchData   Json?
   salary      String?
   postedDate  DateTime?
-  applied     Boolean  @default(false)
-  saved       Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  applied     Boolean   @default(false)
+  saved       Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Aggregator integration (Phase 1 - Smart Job Discovery)
+  // externalId = the upstream aggregator's job ID (e.g. Adzuna).
+  // source     = the underlying source board (naukri / linkedin / indeed / other).
+  // Both nullable to preserve backwards-compatibility with any pre-aggregator rows.
+  externalId String?
+  source     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Idempotency: at most one save per user per external job.
+  // Url-unique kept for legacy compat.
   @@unique([userId, url])
+  @@unique([userId, externalId])
+  @@index([userId, createdAt])
 }
 
 model Subscription {
