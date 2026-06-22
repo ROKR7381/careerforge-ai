@@ -4,7 +4,7 @@ Node implementations for the Interview LangGraph.
 Each node:
 - Accepts: InterviewState
 - Returns: InterviewState (or partial dict -- LangGraph merges)
-- Uses GPT-4o-mini via the existing models.py get_llm() helper
+- Uses GPT-4o-mini via direct OpenAI API calls (bypasses langchain/openai SDK compatibility)
 """
 
 from __future__ import annotations
@@ -14,19 +14,39 @@ import os
 from datetime import datetime
 from typing import Optional
 
-from models import get_openai_llm
+import httpx
 from app.agents.interview.state import (
     InterviewState, HISTORY_WINDOW, TurnMessage, QuestionRecord, Evaluation
 )
 
 logger = logging.getLogger(__name__)
 
-# Reusable LLM accessor -- OpenAI only
-def _llm(temperature: float = 0.3):
+OPENAI_BASE = "https://api.openai.com/v1"
+
+def _openai_chat(messages: list, temperature: float = 0.3, response_format: str | None = None) -> dict:
+    """Call OpenAI Chat Completions API directly — bypasses langchain compatibility issues."""
     key = os.environ.get("OPENAI_API_KEY")
     if not key:
         raise ValueError("OPENAI_API_KEY is not set")
-    return get_openai_llm(api_key=key, temperature=temperature)
+    
+    body = {
+        "model": "gpt-4o-mini",
+        "messages": messages,
+        "temperature": temperature,
+    }
+    if response_format:
+        body["response_format"] = {"type": response_format}
+
+    resp = httpx.post(
+        f"{OPENAI_BASE}/chat/completions",
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        json=body,
+        timeout=60,
+    )
+    if resp.status_code != 200:
+        raise RuntimeError(f"OpenAI API error {resp.status_code}: {resp.text}")
+
+    return resp.json()
 
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "prompts")
@@ -96,12 +116,11 @@ def intent_node(state: InterviewState) -> InterviewState:
         return state
 
     try:
-        llm = _llm(temperature=0.1)
-        response = llm.invoke([
+        response = _openai_chat([
             {"role": "system", "content": INTENT_SYSTEM_PROMPT},
             {"role": "user", "content": f"User message: {text}"},
-        ])
-        content = response.content.strip()
+        ], temperature=0.1)
+        content = response["choices"][0]["message"]["content"].strip()
         if content.startswith("```"):
             content = content.split("\n", 1)[-1].rsplit("\n", 1)[0]
         parsed = json.loads(content)
@@ -200,7 +219,6 @@ def question_generator_node(state: InterviewState) -> InterviewState:
         return state
 
     try:
-        llm = _llm(temperature=0.7)
         prompt = QUESTION_PROMPT.format(
             field=field,
             sub_field=sub_field,
@@ -210,11 +228,11 @@ def question_generator_node(state: InterviewState) -> InterviewState:
             difficulty_guide=difficulty_guide,
             asked_ids=json.dumps(asked_ids),
         )
-        response = llm.invoke([
+        response = _openai_chat([
             {"role": "system", "content": "You are an expert interviewer. Respond with valid JSON only."},
             {"role": "user", "content": prompt},
-        ])
-        content = response.content.strip()
+        ], temperature=0.7)
+        content = response["choices"][0]["message"]["content"].strip()
         if content.startswith("```"):
             content = content.split("\n", 1)[-1].rsplit("\n", 1)[0]
         parsed = json.loads(content)
@@ -284,17 +302,16 @@ def answer_evaluator_node(state: InterviewState) -> InterviewState:
     user_answer = state.get("normalized_input", "")
 
     try:
-        llm = _llm(temperature=0.2)
         prompt = EVALUATOR_PROMPT.format(
             question=q.get("question_text", ""),
             model_answer=q.get("model_answer", "Not provided"),
             answer=user_answer,
         )
-        response = llm.invoke([
+        response = _openai_chat([
             {"role": "system", "content": "You are an expert interview judge. Respond with valid JSON only."},
             {"role": "user", "content": prompt},
-        ])
-        content = response.content.strip()
+        ], temperature=0.2)
+        content = response["choices"][0]["message"]["content"].strip()
         if content.startswith("```"):
             content = content.split("\n", 1)[-1].rsplit("\n", 1)[0]
         parsed = json.loads(content)
@@ -354,12 +371,11 @@ def follow_up_node(state: InterviewState) -> InterviewState:
 
     if topic:
         try:
-            llm = _llm(temperature=0.7)
-            response = llm.invoke([
+            response = _openai_chat([
                 {"role": "system", "content": "You are an expert interviewer. Ask a deeper follow-up question."},
                 {"role": "user", "content": f"Original question: {q}\nTopic to explore deeper: {topic}\nAsk one concise follow-up question."},
-            ])
-            state["bot_reply"] = response.content.strip()
+            ], temperature=0.7)
+            state["bot_reply"] = response["choices"][0]["message"]["content"].strip()
         except Exception:
             state["bot_reply"] = f"Can you elaborate more on {topic}?"
     else:
@@ -385,12 +401,11 @@ def hint_provider_node(state: InterviewState) -> InterviewState:
         return state
 
     try:
-        llm = _llm(temperature=0.5)
-        response = llm.invoke([
+        response = _openai_chat([
             {"role": "system", "content": "You are a helpful interview coach."},
             {"role": "user", "content": HINT_PROMPT.format(question=q)},
-        ])
-        state["bot_reply"] = f"  {response.content.strip()}"
+        ], temperature=0.5)
+        state["bot_reply"] = f"  {response['choices'][0]['message']['content'].strip()}"
     except Exception:
         state["bot_reply"] = f"  Think about the core concept behind this question and how you'd apply it in practice."
 
