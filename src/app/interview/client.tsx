@@ -304,7 +304,7 @@ export function InterviewClient({ user }: Props) {
             score={sessionScore}
             questionsAsked={questionsAsked}
             questionsTotal={questionsTotal}
-            evaluations={evaluations.filter(Boolean)}
+            evaluations={evaluations.filter((e): e is NonNullable<typeof e> => e != null)}
             onRestart={reset}
           />
         )}
