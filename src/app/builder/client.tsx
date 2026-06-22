@@ -16,6 +16,8 @@ import {
   Printer,
   Share2,
   CheckCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +40,7 @@ import {
 import { ResumePreview } from "@/components/resume/preview";
 import { ResumeScoreWidget } from "@/components/resume/resume-score-widget";
 import { downloadPlainText, downloadAsWord } from "@/lib/export-formats";
+import { downloadResumePdf, estimatePageCount } from "@/lib/pdf-export";
 import { ResumeFormPersonalInfo } from "@/components/resume/form-personal-info";
 import { ResumeFormExperience } from "@/components/resume/form-experience";
 import { ResumeFormEducation } from "@/components/resume/form-education";
@@ -46,6 +49,14 @@ import { ResumeFormProjects } from "@/components/resume/form-projects";
 import { ResumeFormCertifications } from "@/components/resume/form-certifications";
 import { ResumeFormLanguages } from "@/components/resume/form-languages";
 import { sampleResume } from "@/types/sample-resume";
+
+// All available resume templates. Centralised so the toolbar, preview, and ATS pages stay in sync.
+const TEMPLATE_NAMES: TemplateName[] = [
+  "dublin", "toronto", "stockholm", "london", "sydney",
+  "berlin", "tokyo", "newyork", "paris", "melbourne",
+  // Indian ATS-friendly templates
+  "kolkata", "delhi", "bangalore", "mumbai",
+];
 
 interface ResumeBuilderClientProps {
   user: {
@@ -83,16 +94,18 @@ export function ResumeBuilderClient({
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const urlTemplate = params.get("template") as TemplateName;
-      if (urlTemplate && ["dublin", "toronto", "stockholm", "london", "sydney"].includes(urlTemplate)) {
+      if (urlTemplate && TEMPLATE_NAMES.includes(urlTemplate)) {
         return urlTemplate;
       }
     }
     return "dublin";
   });
   const [showPreview, setShowPreview] = useState(true);
+  const [showTemplates, setShowTemplates] = useState(true);
   const [saving, setSaving] = useState(false);
   const [aiOptimizing, setAiOptimizing] = useState(false);
   const [activeSection, setActiveSection] = useState("personal-info");
+  const [pageCount, setPageCount] = useState(1);
   const [title, setTitle] = useState(
     initialResume
       ? resumes.find((r) => r.id === resumeId)?.title || "Untitled Resume"
@@ -101,6 +114,23 @@ export function ResumeBuilderClient({
   const autoSaveRef = useRef<NodeJS.Timeout | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [scanning, setScanning] = useState(false);
+
+  // Recompute estimated page count whenever resume content or template changes.
+  // Small delay so the DOM has time to update with the new template first.
+  useEffect(() => {
+    if (!showPreview) {
+      setPageCount(1);
+      return;
+    }
+    const t = setTimeout(() => {
+      try {
+        setPageCount(estimatePageCount("resume-preview"));
+      } catch {
+        setPageCount(1);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [resume, template, showPreview]);
 
   // Auto-save
   const saveResume = useCallback(async () => {
@@ -313,18 +343,40 @@ export function ResumeBuilderClient({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {(["dublin", "toronto", "stockholm", "london", "sydney", "berlin", "tokyo", "newyork", "paris", "melbourne"] as TemplateName[]).map(
-              (t) => (
-                <Button
-                  key={t}
-                  variant={template === t ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setTemplate(t)}
-                  className="capitalize text-xs"
-                >
-                  {t}
-                </Button>
-              )
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTemplates((v) => !v)}
+              aria-expanded={showTemplates}
+              aria-controls="template-picker"
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+            >
+              {showTemplates ? (
+                <ChevronUp className="h-3.5 w-3.5 mr-1" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5 mr-1" />
+              )}
+              Templates ({TEMPLATE_NAMES.length})
+            </Button>
+            {showTemplates && (
+              <div
+                id="template-picker"
+                className="contents"
+                role="group"
+                aria-label="Resume templates"
+              >
+                {TEMPLATE_NAMES.map((t) => (
+                  <Button
+                    key={t}
+                    variant={template === t ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setTemplate(t)}
+                    className="capitalize text-xs"
+                  >
+                    {t}
+                  </Button>
+                ))}
+              </div>
             )}
             <Separator orientation="vertical" className="h-6 mx-1" />
             <Button
@@ -641,14 +693,17 @@ export function ResumeBuilderClient({
       {showPreview && (
         <div className="flex-1 overflow-y-auto bg-muted/30 p-6">
           <div className="sticky top-0 z-10 mb-4 flex items-center justify-between no-print">
-            <h3 className="text-sm font-medium text-muted-foreground">
+            <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               Live Preview — <span className="capitalize">{template}</span>
+              <Badge variant="secondary" className="text-[10px] font-semibold">
+                {pageCount} {pageCount === 1 ? "page" : "pages"}
+              </Badge>
             </h3>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.print()}
+                onClick={() => handleExportPdf()}
               >
                 <Printer className="h-3.5 w-3.5 mr-1" /> Print PDF
               </Button>
@@ -779,26 +834,15 @@ export function ResumeBuilderClient({
 
   async function handleExportPdf() {
     try {
-      const res = await fetch("/api/export", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resume,
-          templateName: template,
-          format: "pdf",
-        }),
+      toast.info("Generating PDF — multi-page resumes may take a few seconds…");
+      await downloadResumePdf({
+        elementId: "resume-preview",
+        filename: title || "Resume",
       });
-      if (!res.ok) throw new Error("Export failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${title.replace(/\s+/g, "_")}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
       toast.success("PDF downloaded!");
-    } catch {
-      toast.error("PDF export requires the Python backend.");
+    } catch (err: any) {
+      console.error("PDF export failed:", err);
+      toast.error(err?.message || "PDF export failed. Try the Print button.");
     }
   }
 }

@@ -78,7 +78,21 @@ export interface Suggestion {
   suggested: string;
 }
 
-export type TemplateName = "dublin" | "stockholm" | "toronto" | "london" | "sydney" | "berlin" | "tokyo" | "newyork" | "paris" | "melbourne";
+export type TemplateName =
+  | "dublin"
+  | "stockholm"
+  | "toronto"
+  | "london"
+  | "sydney"
+  | "berlin"
+  | "tokyo"
+  | "newyork"
+  | "paris"
+  | "melbourne"
+  | "kolkata"
+  | "delhi"
+  | "bangalore"
+  | "mumbai";
 
 export const emptyResume: ResumeData = {
   personal_info: {

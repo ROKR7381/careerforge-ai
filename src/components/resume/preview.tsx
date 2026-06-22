@@ -11,6 +11,10 @@ import { TemplateTokyo } from "./templates/tokyo";
 import { TemplateNewYork } from "./templates/newyork";
 import { TemplateParis } from "./templates/paris";
 import { TemplateMelbourne } from "./templates/melbourne";
+import { TemplateKolkata } from "./templates/kolkata";
+import { TemplateDelhi } from "./templates/delhi";
+import { TemplateBangalore } from "./templates/bangalore";
+import { TemplateMumbai } from "./templates/mumbai";
 
 interface Props {
   resume: ResumeData;
@@ -30,6 +34,10 @@ export function ResumePreview({ resume, template }: Props) {
       {template === "newyork" && <TemplateNewYork resume={resume} />}
       {template === "paris" && <TemplateParis resume={resume} />}
       {template === "melbourne" && <TemplateMelbourne resume={resume} />}
+      {template === "kolkata" && <TemplateKolkata resume={resume} />}
+      {template === "delhi" && <TemplateDelhi resume={resume} />}
+      {template === "bangalore" && <TemplateBangalore resume={resume} />}
+      {template === "mumbai" && <TemplateMumbai resume={resume} />}
     </div>
   );
 }

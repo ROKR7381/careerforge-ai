@@ -1,43 +1,120 @@
 @import "tailwindcss";
 
 @theme inline {
+  /* Surface tokens (layered backgrounds for cards/panels) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  /* Brand palette — indigo ramp (kept for gradients & glows) */
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+
+  /* Warm accent ramp — orange/coral for highlights, success CTAs */
+  --color-accent-50: #fff7ed;
+  --color-accent-100: #ffedd5;
+  --color-accent-200: #fed7aa;
+  --color-accent-300: #fdba74;
+  --color-accent-400: #fb923c;
+  --color-accent-500: #f97316;
+  --color-accent-600: #ea580c;
+  --color-accent-700: #c2410c;
+  --color-accent-800: #9a3412;
+  --color-accent-900: #7c2d12;
+
+  /* Primary = indigo (CTA, links, brand) */
   --color-primary: #4f46e5;
   --color-primary-foreground: #ffffff;
   --color-secondary: #6366f1;
-  --color-accent: #818cf8;
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
+
+  /* Warm accent = orange (highlights, success, secondary CTAs) */
+  --color-accent: #f97316;
+  --color-accent-foreground: #ffffff;
+
+  /* Tertiary hues for variety */
+  --color-violet: #8b5cf6;
+  --color-fuchsia: #d946ef;
+  --color-rose: #f43f5e;
+  --color-amber: #f59e0b;
+  --color-emerald: #10b981;
+  --color-sky: #0ea5e9;
+  --color-cyan: #06b6d4;
+
+  --color-muted: #f5f5f4;
+  --color-muted-foreground: #57534e;
   --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-  --color-border: #e2e8f0;
+  --color-card-foreground: #0c0a09;
+  --color-border: #e7e5e4;
   --color-ring: #4f46e5;
-  --color-destructive: #ef4444;
-  --color-success: #22c55e;
+  --color-destructive: #dc2626;
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-info: #0284c7;
+
+  /* Typography */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display, var(--font-geist-sans));
+
+  /* Geometry */
   --radius: 0.625rem;
-  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.5);
-  --shadow-glass-lg: 0 16px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.5);
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  /* Elevation — tinted with brand color (not pure gray) */
+  --shadow-glass: 0 8px 32px rgba(79, 70, 229, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.6);
+  --shadow-glass-lg: 0 16px 48px rgba(79, 70, 229, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.6);
+  --shadow-glow: 0 0 0 1px rgba(79, 70, 229, 0.15), 0 8px 32px rgba(79, 70, 229, 0.22);
+  --shadow-glow-accent: 0 0 0 1px rgba(249, 115, 22, 0.15), 0 8px 32px rgba(249, 115, 22, 0.22);
+  --shadow-elevated: 0 24px 48px -12px rgba(15, 23, 42, 0.18);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
+/* =========================================================================
+   LIGHT MODE (default) — warm-tinted neutrals, never pure white/black
+   ========================================================================= */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Warm off-white background (subtle cream tint) */
+  --background: #fafaf9;
+  /* Warm near-black text */
+  --foreground: #0c0a09;
+  /* Pure white surface for cards (creates contrast against tinted bg) */
+  --surface-1: #ffffff;
+  /* Slightly darker surface for nested elements */
+  --surface-2: #fafaf9;
+  /* Even darker for hover states */
+  --surface-3: #f5f5f4;
 }
 
+/* =========================================================================
+   DARK MODE — warm-tinted darks (Linear-style: #0a0a0a family)
+   ========================================================================= */
 .dark {
-  --background: #0b1121;
-  --foreground: #e2e8f0;
-  --color-muted: #1e293b;
-  --color-muted-foreground: #94a3b8;
-  --color-card: #0f172a;
-  --color-card-foreground: #e2e8f0;
-  --color-border: #1e293b;
+  --background: #0c0a09;
+  --foreground: #fafaf9;
+  --surface-1: #171717;
+  --surface-2: #1f1f1f;
+  --surface-3: #262626;
+  --color-muted: #262626;
+  --color-muted-foreground: #a8a29e;
+  --color-card: #171717;
+  --color-card-foreground: #fafaf9;
+  --color-border: #2e2e2e;
   --color-primary: #818cf8;
+  --color-accent: #fb923c;
   --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
   --shadow-glass-lg: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .high-contrast {
@@ -66,6 +143,146 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Display font utility — applied to h1/h2 and large titles */
+.font-display {
+  font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif;
+  letter-spacing: -0.025em;
+  font-feature-settings: "ss01", "cv11";
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Mesh gradient blob animation (for MeshGradient component) */
+@keyframes meshShift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2%, -2%, 0) scale(1.05);
+  }
+  100% {
+    transform: translate3d(-2%, 1%, 0) scale(0.98);
+  }
+}
+
+/* Gradient pan animation (for GradientText component) */
+@keyframes gradient-pan {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Subtle float animation for decorative orbs */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Cursor-following glow (used by hero CTAs) */
+.cursor-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.cursor-glow::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(99, 102, 241, 0.18), transparent 40%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 0;
+}
+
+.cursor-glow:hover::before {
+  opacity: 1;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* =========================================================================
+   3D Green Hover — Premium "lift + light green" effect
+   Apply to any interactive element (buttons, links, icons) for a tactile feel.
+   - Hover: subtle lift (translateY -1px) + light emerald-50 background + green glow
+   - Active: press back down (translateY 0)
+   - Dark mode: deeper emerald tint for contrast
+   ========================================================================= */
+.btn-3d {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.18s ease,
+              box-shadow 0.18s ease,
+              border-color 0.18s ease;
+  transform: translateY(0);
+  will-change: transform;
+}
+
+.btn-3d:hover {
+  transform: translateY(-1px);
+  background-color: rgb(236 253 245); /* emerald-50 */
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15),
+              0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.btn-3d:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  background-color: rgb(209 250 229); /* emerald-100 — press feedback */
+}
+
+.dark .btn-3d:hover {
+  background-color: rgba(16, 185, 129, 0.12);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25),
+              inset 0 0 0 1px rgba(16, 185, 129, 0.2);
+}
+
+.dark .btn-3d:active {
+  background-color: rgba(16, 185, 129, 0.18);
+}
+
+/* Hover-green-text: pairs with btn-3d for icon buttons */
+.hover\:text-emerald-600:hover {
+  color: rgb(5 150 105);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .btn-3d:hover,
+  .btn-3d:active {
+    transform: none;
+  }
 }
 
 /* Glassmorphism utility */
@@ -113,6 +330,51 @@ body {
   .print-only {
     display: block !important;
   }
+}
+
+/* =========================================================================
+   Multi-page resume pagination (Path A — CSS-only)
+   Ensures long resumes split cleanly across pages when printed/exported.
+   ========================================================================= */
+@page {
+  size: A4;
+  margin: 0; /* Templates control their own padding (more reliable than browser default margins) */
+}
+
+/* Each major section tries to stay together on one page */
+section {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Individual resume entries (job, education, project) never split mid-way */
+.resume-entry {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Don't split a heading from its first content line */
+h1, h2, h3 {
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+/* Bullet lists try to stay together — breaks only if absolutely needed */
+ul, ol {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Tables (if any future template uses them) keep rows together */
+tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* When splitting is unavoidable, give some breathing room after the break */
+p, li {
+  orphans: 3;
+  widows: 3;
 }
 
 /* Skeleton loading animation */

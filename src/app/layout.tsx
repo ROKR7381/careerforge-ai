@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/layout/navbar";
@@ -17,10 +17,44 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Premium display font for headings, hero copy, and section titles.
+// Plus Jakarta Sans has a distinctive geometric character (similar to Cal Sans)
+// and renders beautifully at large sizes — chosen as our display face because
+// it's free, Google-hosted, and used by Linear/Vercel-adjacent products.
+const display = Plus_Jakarta_Sans({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "CareerForge AI — AI-Powered Resume Builder & Career Platform",
   description:
     "Build ATS-optimized resumes, discover your dream job, and ace interviews with AI-powered coaching. Your complete career advancement platform.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  openGraph: {
+    title: "CareerForge AI — Build ATS-Optimized Resumes in Minutes",
+    description:
+      "AI-powered resume builder with ATS scoring, job matching, and interview coaching. Trusted by professionals worldwide.",
+    type: "website",
+    siteName: "CareerForge AI",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CareerForge AI — AI-Powered Resume Builder",
+    description: "Build ATS-optimized resumes, ace interviews, land your dream job.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default async function RootLayout({
@@ -36,7 +70,8 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />

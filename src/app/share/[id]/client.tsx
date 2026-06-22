@@ -26,8 +26,18 @@ export function ShareClient({ resume, title, templateName, shareUrl }: ShareClie
   const [template, setTemplate] = useState<TemplateName>(templateName || "dublin");
   const [copied, setCopied] = useState(false);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    try {
+      const { downloadResumePdf } = await import("@/lib/pdf-export");
+      await downloadResumePdf({
+        elementId: "resume-preview",
+        filename: resume.personal_info.full_name || "Resume",
+      });
+      toast.success("PDF downloaded!");
+    } catch (err: any) {
+      console.error("PDF export failed:", err);
+      toast.error(err?.message || "PDF export failed");
+    }
   };
 
   const handleCopyLink = () => {
@@ -126,7 +136,7 @@ export function ShareClient({ resume, title, templateName, shareUrl }: ShareClie
         {/* Template Switcher */}
         <div className="flex items-center justify-center gap-1 bg-white rounded-xl border border-slate-200 shadow-sm p-2">
           <span className="text-xs text-slate-400 px-2">Template:</span>
-          {(["dublin", "toronto", "stockholm", "london", "sydney", "berlin", "tokyo", "newyork", "paris", "melbourne"] as TemplateName[]).map((t) => (
+          {(["dublin", "toronto", "stockholm", "london", "sydney", "berlin", "tokyo", "newyork", "paris", "melbourne", "kolkata", "delhi", "bangalore", "mumbai"] as TemplateName[]).map((t) => (
             <Button
               key={t}
               variant={template === t ? "default" : "ghost"}
