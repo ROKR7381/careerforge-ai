@@ -127,6 +127,44 @@ def get_compiled_graph():
     return _compiled_graph
 
 
+def _merge_previous_state(
+    user_id: str,
+    session_id: str,
+    user_message: str,
+    target_question_count: Optional[int] = None,
+    selected_topic: Optional[str] = None,
+) -> InterviewState:
+    """Load previous checkpointed state and overlay new turn data."""
+    from datetime import datetime
+    now = datetime.utcnow().isoformat()
+    previous = get_thread_state(user_id) or {}
+
+    merged = new_state(user_id=user_id, session_id=session_id, raw_input=user_message)
+    for k, v in previous.items():
+        if k in ("raw_input", "normalized_input", "bot_reply", "error", "error_node",
+                  "needs_clarification", "clarification_question", "last_evaluation",
+                  "streaming_tokens", "latency_ms"):
+            continue
+        merged[k] = v
+    merged["raw_input"] = user_message
+    merged["normalized_input"] = ""
+    merged["bot_reply"] = ""
+    merged["error"] = None
+    merged["error_node"] = None
+    merged["needs_clarification"] = False
+    merged["clarification_question"] = None
+    merged["last_evaluation"] = None
+    merged["updated_at"] = now
+    merged["latency_ms"] = None
+
+    if target_question_count:
+        merged["target_question_count"] = target_question_count
+    if selected_topic:
+        merged["selected_topic"] = selected_topic
+
+    return merged
+
+
 def run_graph(
     user_id: str,
     session_id: str,
@@ -142,11 +180,11 @@ def run_graph(
 
     t0 = time.perf_counter()
 
-    initial = new_state(user_id=user_id, session_id=session_id, raw_input=user_message)
-    if target_question_count:
-        initial["target_question_count"] = target_question_count
-    if selected_topic:
-        initial["selected_topic"] = selected_topic
+    initial = _merge_previous_state(
+        user_id, session_id, user_message,
+        target_question_count=target_question_count,
+        selected_topic=selected_topic,
+    )
 
     config = {"configurable": {"thread_id": user_id}}
 
@@ -187,11 +225,11 @@ async def arun_graph(
 
     t0 = time.perf_counter()
 
-    initial = new_state(user_id=user_id, session_id=session_id, raw_input=user_message)
-    if target_question_count:
-        initial["target_question_count"] = target_question_count
-    if selected_topic:
-        initial["selected_topic"] = selected_topic
+    initial = _merge_previous_state(
+        user_id, session_id, user_message,
+        target_question_count=target_question_count,
+        selected_topic=selected_topic,
+    )
 
     config = {"configurable": {"thread_id": user_id}}
 
