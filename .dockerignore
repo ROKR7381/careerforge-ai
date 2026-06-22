@@ -1,0 +1,12 @@
+node_modules
+.next
+.vercel
+.git
+*.md
+src/
+prisma/
+public/
+scripts/
+*.bat
+*.ps1
+.DS_Store
