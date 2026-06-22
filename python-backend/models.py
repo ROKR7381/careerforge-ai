@@ -9,10 +9,10 @@ def get_openai_llm(api_key: str = None, temperature: float = 0.3, model: str = "
     if not key:
         raise ValueError("OpenAI API Key is missing.")
     return ChatOpenAI(
-        openai_api_key=key,
-        model_name=model,
+        api_key=key,
+        model=model,
         temperature=temperature,
-        timeout=120  # seconds — prevents indefinite hang
+        timeout=120
     )
 
 def get_groq_llm(api_key: str = None, temperature: float = 0.3):
