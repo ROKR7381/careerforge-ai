@@ -78,43 +78,6 @@ def _get_user_id(x_user_id: Optional[str] = Header(None)) -> str:
     return "anonymous"
 
 
-# ---------- Debug Endpoint ----------
-
-@router.get("/debug-key")
-async def debug_key():
-    """Debug endpoint to check API key status (no auth required)."""
-    import os
-    import httpx
-
-    key = os.environ.get("OPENAI_API_KEY", "")
-    prefix = key[:15] if len(key) > 15 else key
-    suffix = key[-4:] if len(key) > 4 else key
-    
-    try:
-        resp = httpx.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "say hi"}], "max_tokens": 5},
-            timeout=15,
-        )
-        return {
-            "key_present": bool(key),
-            "key_length": len(key),
-            "key_prefix": prefix,
-            "key_suffix": suffix,
-            "test_status": resp.status_code,
-            "test_response": resp.text[:200],
-        }
-    except Exception as e:
-        return {
-            "key_present": bool(key),
-            "key_length": len(key),
-            "key_prefix": prefix,
-            "key_suffix": suffix,
-            "test_error": str(e),
-        }
-
-
 # ---------- Endpoints ----------
 
 @router.post("/chat", response_model=ChatResponse)

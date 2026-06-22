@@ -354,10 +354,13 @@ def answer_evaluator_node(state: InterviewState) -> InterviewState:
         if suggestion:
             reply_parts.append(f"  {suggestion}")
 
-        follow_up = evaluation.get("follow_up_topic")
-        if follow_up:
-            reply_parts.append(f"  Can you go deeper into {follow_up}?")
-            state["route"] = "follow_up"
+        count = state.get("questions_asked_count", 0)
+        total = state.get("target_question_count", 10)
+        remaining = total - count
+        if remaining > 0:
+            reply_parts.append(f"  Type **'next'** for the next question or **'end'** to finish.")
+        else:
+            reply_parts.append(f"  Type **'end'** or **'report'** to see your summary.")
 
         state["bot_reply"] = "\n\n".join(reply_parts)
         state["model_used"] = "gpt-4o-mini"
