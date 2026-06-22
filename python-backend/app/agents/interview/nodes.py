@@ -116,9 +116,14 @@ def intent_node(state: InterviewState) -> InterviewState:
         return state
 
     try:
+        current_q = (state.get("current_question") or {}).get("question_text", "")
+        context = ""
+        if current_q:
+            context = f"\nCurrent interview question: \"{current_q}\""
+
         response = _openai_chat([
             {"role": "system", "content": INTENT_SYSTEM_PROMPT},
-            {"role": "user", "content": f"User message: {text}"},
+            {"role": "user", "content": f"User message: {text}{context}"},
         ], temperature=0.1)
         content = response["choices"][0]["message"]["content"].strip()
         if content.startswith("```"):
@@ -127,6 +132,10 @@ def intent_node(state: InterviewState) -> InterviewState:
         state["intent"] = parsed.get("intent", "unknown")
         state["intent_confidence"] = parsed.get("confidence", 0.0)
         state["model_used"] = "gpt-4o-mini"
+
+        if state["intent"] == "unknown" and state.get("current_question"):
+            state["intent"] = "answer_question"
+            state["intent_confidence"] = 0.6
     except Exception as e:
         logger.warning(f"Intent LLM failed: {e}, using fallback")
         text_lower = text.lower()
