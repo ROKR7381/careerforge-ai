@@ -121,8 +121,15 @@ export function DashboardClient({
           <div className="flex items-center gap-3">
             {user.subscriptionPlan === "FREE" && (
               <Button asChild>
-                <Link href="/billing">
-                  <Sparkles className="mr-2 h-4 w-4" /> Upgrade to Premium
+                <Link href="/billing?plan=TRIAL">
+                  <Sparkles className="mr-2 h-4 w-4" /> Try Pro for 7 days — ₹249
+                </Link>
+              </Button>
+            )}
+            {user.subscriptionPlan === "PREMIUM_TRIAL" && (
+              <Button asChild>
+                <Link href="/billing?plan=MONTHLY">
+                  <Sparkles className="mr-2 h-4 w-4" /> Upgrade to Pro Monthly
                 </Link>
               </Button>
             )}

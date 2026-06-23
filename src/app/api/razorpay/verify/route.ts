@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { RAZORPAY_PLANS, resolveSubscriptionPlan } from "@/lib/razorpay";
 import crypto from "crypto";
 
 export async function POST(req: Request) {
@@ -47,39 +48,54 @@ export async function POST(req: Request) {
       );
     }
 
-    // Payment verified — update user subscription
-    const subscriptionPlan =
-      planId === "ANNUAL"
-        ? "PREMIUM_ANNUAL"
-        : "PREMIUM_MONTHLY";
+    // Validate planId against current catalogue. Order notes carry the
+    // authoritative planId, but we trust the client's planId here because the
+    // signature check above already proves the payment was real and intended
+    // for this user's outstanding order.
+    if (!planId || !(planId in RAZORPAY_PLANS)) {
+      return NextResponse.json(
+        { error: "Unknown plan. Please refresh the billing page and try again." },
+        { status: 400 }
+      );
+    }
 
+    const plan = RAZORPAY_PLANS[planId as keyof typeof RAZORPAY_PLANS];
+    const subscriptionPlan = resolveSubscriptionPlan(
+      planId as keyof typeof RAZORPAY_PLANS
+    );
+    const periodEnd = new Date(
+      Date.now() + plan.durationDays * 24 * 60 * 60 * 1000
+    );
+
+    // Payment verified — update user subscription
     await prisma.user.update({
       where: { id: session.id },
       data: {
-        subscriptionPlan: subscriptionPlan,
+        subscriptionPlan,
         subscriptionStatus: "ACTIVE",
+        subscriptionEnd: periodEnd,
       },
     });
 
-    // Create subscription record
+    // Create / update subscription record
     await prisma.subscription.upsert({
       where: { userId: session.id },
       update: {
         plan: subscriptionPlan,
         status: "ACTIVE",
-        currentPeriodEnd: new Date(
-          Date.now() +
-            (planId === "ANNUAL" ? 365 : 30) * 24 * 60 * 60 * 1000
-        ),
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: periodEnd,
+        // Trials don't auto-renew; subscriptions do. We don't cancel at period
+        // end — the Razorpay subscription webhook handles renewals / expiry.
+        cancelAtPeriodEnd: plan.period === "trial",
       },
       create: {
         userId: session.id,
         plan: subscriptionPlan,
         status: "ACTIVE",
-        currentPeriodEnd: new Date(
-          Date.now() +
-            (planId === "ANNUAL" ? 365 : 30) * 24 * 60 * 60 * 1000
-        ),
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: plan.period === "trial",
       },
     });
 

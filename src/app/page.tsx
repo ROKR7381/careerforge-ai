@@ -279,7 +279,6 @@ function LiveActivityTicker() {
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [pricingCycle, setPricingCycle] = useState<"monthly" | "annual">("monthly");
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll();
   const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
@@ -917,65 +916,16 @@ export default function LandingPage() {
             </motion.h2>
             <motion.p
               variants={fadeIn}
-              className="mt-4 text-lg text-muted-foreground"
+              className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto"
             >
-              Start free, upgrade when you need more power. No hidden fees.
+              Build for free. Pay only when you download. From just{" "}
+              <span className="font-semibold text-foreground">₹249</span> for a
+              7-day trial — cancel anytime, no auto-charge.
             </motion.p>
-
-            {/* Monthly / Annual Toggle */}
-            <motion.div
-              variants={fadeIn}
-              className="mt-8 inline-flex items-center gap-1 rounded-full border border-border bg-white p-1.5 shadow-sm"
-              role="tablist"
-              aria-label="Billing cycle"
-            >
-              <button
-                role="tab"
-                aria-selected={pricingCycle === "monthly"}
-                onClick={() => setPricingCycle("monthly")}
-                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
-                  pricingCycle === "monthly"
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                role="tab"
-                aria-selected={pricingCycle === "annual"}
-                onClick={() => setPricingCycle("annual")}
-                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 inline-flex items-center gap-2 ${
-                  pricingCycle === "annual"
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Annual
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                  pricingCycle === "annual"
-                    ? "bg-white/20 text-white"
-                    : "bg-emerald-100 text-emerald-700"
-                }`}>
-                  Save 20%
-                </span>
-              </button>
-            </motion.div>
           </motion.div>
 
           <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-2 lg:grid-cols-4">
             {plans.map((plan, i) => {
-              const isAnnual = pricingCycle === "annual";
-              const displayPrice =
-                plan.period === "year"
-                  ? plan.price
-                  : isAnnual
-                  ? Math.round(Number(plan.price) * 0.8).toString()
-                  : plan.price;
-              const displayPeriod =
-                plan.period === "year" ? "year" : isAnnual ? "mo, billed yearly" : "month";
-              const showOriginal =
-                isAnnual && plan.period === "month" && Number(plan.price) > 0;
               return (
               <motion.div
                 key={plan.name}
@@ -989,27 +939,32 @@ export default function LandingPage() {
                   className={`relative flex flex-col h-full border-2 transition-all duration-300 ${
                     plan.popular
                       ? "border-primary shadow-xl shadow-primary/20 scale-[1.02]"
-                      : "border-border hover:border-primary/30 hover:shadow-lg"
+                      : (plan as any).accent || "border-border hover:border-primary/30 hover:shadow-lg"
                   }`}
                 >
-                  {plan.popular && (
+                  {(plan as any).badge && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                      <Badge className="px-4 py-1 text-xs shadow-md bg-gradient-to-r from-accent to-accent/80 text-accent-foreground border-0">
-                        ✦ Most Popular
+                      <Badge className="px-3 py-1 text-xs shadow-md whitespace-nowrap">
+                        {(plan as any).badge}
                       </Badge>
                     </div>
                   )}
                   <CardContent className="p-6 flex flex-col flex-grow">
                     <h3 className="text-xl font-semibold">{plan.name}</h3>
                     <p className="mt-4">
-                      {showOriginal && (
-                        <span className="text-lg text-muted-foreground line-through mr-2">
-                          ${plan.price}
-                        </span>
+                      <span className="text-4xl font-bold">₹{plan.price}</span>
+                      {plan.period === "month" && (
+                        <span className="text-muted-foreground"> /month</span>
                       )}
-                      <span className="text-4xl font-bold">${displayPrice}</span>
-                      <span className="text-muted-foreground">/{displayPeriod}</span>
+                      {plan.period === "year" && (
+                        <span className="text-muted-foreground"> /year</span>
+                      )}
                     </p>
+                    {(plan as any).priceSuffix && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {(plan as any).priceSuffix}
+                      </p>
+                    )}
                     <p className="mt-2 text-sm text-muted-foreground min-h-[40px]">
                       {plan.description}
                     </p>
@@ -1029,7 +984,7 @@ export default function LandingPage() {
                         size="lg"
                         asChild
                       >
-                        <Link href="/signup">
+                        <Link href={plan.price === "0" ? "/signup" : "/billing"}>
                           {plan.cta}
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
@@ -1495,85 +1450,108 @@ const plans = [
   {
     name: "Free",
     price: "0",
+    priceSuffix: "forever",
     period: "month",
-    description: "Perfect for getting started",
+    description: "Build your resume and explore the platform",
     features: [
       "1 active resume",
-      "3 standard templates",
-      "Watermarked PDF download",
-      "3 mock interview questions",
-      "Basic ATS scan suggestions",
+      "All templates (preview only)",
+      "ATS quick scan — top 3 issues",
+      "1 mock interview (3 questions)",
+      "Browse the job board",
     ],
     cta: "Get Started Free",
     popular: false,
+    accent: "border-slate-200",
   },
   {
-    name: "Student",
-    price: "5",
-    period: "month",
-    description: "Discounted full premium access for students",
+    name: "7-Day Pro Trial",
+    price: "249",
+    priceSuffix: "one-time · 7 days",
+    period: "trial",
+    description: "Try every Pro feature — risk-free, no auto-charge",
     features: [
-      "Unlimited active resumes",
-      "All premium templates",
-      "Unwatermarked PDF & Excel",
-      "Unlimited AI optimizations",
+      "Everything in Pro, for 7 days",
+      "Unlimited resumes & downloads",
+      "LinkedIn profile import",
+      "Full ATS score + fixes",
+      "Smart Job Search (unlimited)",
       "Unlimited mock interviews",
     ],
-    cta: "Start Student Trial",
+    cta: "Start 7-Day Trial",
     popular: true,
+    badge: "🔥 Most Popular",
+    accent: "border-primary shadow-xl shadow-primary/20",
   },
   {
-    name: "Professional",
-    price: "10",
+    name: "Pro Monthly",
+    price: "349",
+    priceSuffix: "per month",
     period: "month",
-    description: "Essential AI features for job seekers",
+    description: "Full Pro access, billed every month",
     features: [
-      "Up to 3 active resumes",
-      "All premium templates",
-      "Unwatermarked PDF download",
-      "10 AI enhancements / month",
-      "Standard interview coaching",
+      "Unlimited active resumes",
+      "All premium templates (no watermark)",
+      "PDF, Word, Excel export",
+      "LinkedIn profile import",
+      "Full ATS score + recommendations",
+      "Smart Job Search — save unlimited jobs",
+      "Unlimited mock interviews",
     ],
-    cta: "Start Professional",
+    cta: "Subscribe Monthly",
     popular: false,
+    accent: "border-indigo-300",
   },
   {
-    name: "Annual Value",
-    price: "99",
+    name: "Pro Yearly",
+    price: "1,499",
+    priceSuffix: "per year · save 64%",
     period: "year",
-    description: "Best long-term value for career growth",
+    description: "Everything in Monthly — billed yearly, save ₹2,689",
     features: [
-      "All premium features included",
-      "Save 50%+ vs monthly plan",
-      "1-on-1 resume review session",
+      "Everything in Pro Monthly",
+      "Save 64% vs paying monthly",
+      "Quarterly 1-on-1 resume review",
       "VIP priority email support",
       "Early access to new templates",
+      "LinkedIn profile import",
+      "Smart Job Search",
     ],
-    cta: "Start Annual Value",
+    cta: "Subscribe Yearly",
     popular: false,
+    badge: "💎 Best Value",
+    accent: "border-emerald-300",
   },
 ];
 
 const faqs = [
   {
     q: "Is CareerForge AI really free?",
-    a: "Yes! You can build one complete resume for free with access to 3 templates and basic AI features. No credit card required to sign up. Premium plans unlock unlimited resumes, all templates, and advanced AI features.",
+    a: "Yes — you can build your resume, preview every template, run an ATS quick scan, and browse the job board without paying anything. You only pay when you want to download your resume (PDF / Word / Excel) or unlock Pro features like LinkedIn import, full ATS reports, and Smart Job Search.",
   },
   {
-    q: "How does the AI resume optimization work?",
-    a: "Our AI analyzes your resume content and rewrites bullet points using the XYZ formula (Accomplishment + Task + Result). It tailors keywords to match specific job descriptions, ensures ATS compatibility, and suggests improvements for maximum impact.",
+    q: "How does the 7-day trial work?",
+    a: "Pay ₹249 once and every Pro feature unlocks for 7 full days — no auto-charge, no commitment. At the end of the trial you can subscribe monthly (₹349) or yearly (₹1,499) to keep Pro, or simply revert to the Free plan.",
+  },
+  {
+    q: "What's the difference between Monthly and Yearly?",
+    a: "Both unlock the same Pro features. Yearly is billed once at ₹1,499 (≈ ₹125 / month) and saves you ₹2,689 versus paying monthly. Monthly is ₹349 / month and is best if you only need Pro for one or two months.",
+  },
+  {
+    q: "Can I download my resume as PDF, Word, and Excel?",
+    a: "Yes — Pro users can download in all three formats, watermark-free, preserving every design detail. Free users can build and preview their resume but downloads require a Pro plan.",
   },
   {
     q: "Will my resume pass ATS screening?",
-    a: "Our templates are specifically designed to pass Applicant Tracking Systems. We test against major ATS platforms like Workday, Greenhouse, and Taleo. The ATS Score Checker gives you a detailed breakdown of compatibility issues before you apply.",
+    a: "Every template is tested against real ATS platforms like Workday, Greenhouse, and Taleo. The ATS Score Checker gives you a 0–100 score with detailed, line-by-line recommendations to fix keyword gaps, formatting issues, and structure problems.",
   },
   {
-    q: "Can I download my resume as PDF?",
-    a: "Yes! Premium users can download watermarked-free PDF resumes that preserve formatting perfectly. Free users can download with a small watermark. We also support Excel export and cloud sharing links.",
+    q: "What is LinkedIn import?",
+    a: "Paste your LinkedIn profile URL and CareerForge AI parses your experience, education, and skills into a structured resume in under a minute. No more copy-pasting between tabs.",
   },
   {
-    q: "How is CareerForge different from resume.io or Zety?",
-    a: "CareerForge combines resume building, ATS checking, job matching, and interview coaching in one platform. Our AI is trained specifically on successful resumes and uses the XYZ formula. We also offer transparent pricing with no surprise paywalls.",
+    q: "How does Smart Job Search work?",
+    a: "We aggregate fresh listings from Naukri, LinkedIn, Indeed, and other Indian job boards and rank them against your resume. Pro users can save unlimited jobs and get AI-tailored match scores.",
   },
   {
     q: "Is my data safe and private?",
@@ -1584,7 +1562,7 @@ const faqs = [
     a: "Yes! CareerForge is fully responsive and works on all devices — phones, tablets, and desktops. You can build, edit, and download your resume from anywhere.",
   },
   {
-    q: "Do you offer cover letter templates?",
-    a: "Yes! CareerForge includes a dedicated Cover Letter Builder with multiple templates matching our resume designs. Our AI generates personalized cover letters based on your resume and target job description.",
+    q: "How do I cancel my subscription?",
+    a: "You can cancel anytime from your Billing page. Your Pro access remains active until the end of the current billing period — no questions, no friction.",
   },
 ];

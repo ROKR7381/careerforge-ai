@@ -317,29 +317,115 @@ html {
   background-clip: text;
 }
 
-/* Print styles for resume export */
+/* =========================================================================
+   Print styles for resume export (window.print() PDF path)
+   --------------------------------------------------------------------------
+   We use the browser's native print engine to produce PDFs. This is the
+   only bulletproof path because the print engine is fully CSS-compliant
+   (supports lab()/oklch()/lch()/color() natively), whereas html2canvas
+   can't parse modern color functions and reliably fails on Tailwind v4.
+
+   These rules:
+     1. Hide ALL app chrome — navbars, sidebars, buttons, toasts, modals.
+     2. Force the resume preview (#resume-preview) to fill the page.
+     3. Force white background and color printing (otherwise Chrome may
+        omit background colors and tinted body backgrounds).
+     4. Set the page size to A4 with 0 margins (templates control their
+        own padding via Tailwind utilities).
+   ========================================================================= */
 @media print {
+  /* Reset the page chrome ------------------------------------------------ */
+  html,
   body {
-    background: white !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Preserve any tinted backgrounds on the resume itself ----------------- */
+  *,
+  *::before,
+  *::after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+
+  /* Hide everything that isn't the resume itself -------------------------- */
+  nav,
+  header,
+  aside,
+  footer,
+  [role="navigation"],
+  [role="banner"],
+  [role="contentinfo"],
+  [data-sonner-toaster],
+  [data-sonner-toast],
+  [data-radix-portal],
+  button,
+  .no-print,
+  .print-hide {
+    display: none !important;
+  }
+
+  /* The resume preview takes the whole page ------------------------------- */
+  #resume-preview {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  /* Disable dark mode / sepia / high-contrast variants from bleeding into
+     the print output — the resume should always print on white. */
+  body,
+  .dark body,
+  .sepia body,
+  .high-contrast body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Reveal anything explicitly marked as print-only ----------------------- */
   .no-print {
     display: none !important;
   }
   .print-only {
     display: block !important;
   }
+
+  /* Avoid breaking a single resume entry across pages --------------------- */
+  .resume-entry,
+  section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  ul, ol, p {
+    orphans: 3;
+    widows: 3;
+  }
+}
+
+/* A4 page size for both screen preview approximation and print ----------- */
+@page {
+  size: A4;
+  margin: 0;
 }
 
 /* =========================================================================
    Multi-page resume pagination (Path A — CSS-only)
    Ensures long resumes split cleanly across pages when printed/exported.
    ========================================================================= */
-@page {
-  size: A4;
-  margin: 0; /* Templates control their own padding (more reliable than browser default margins) */
-}
 
 /* Each major section tries to stay together on one page */
 section {

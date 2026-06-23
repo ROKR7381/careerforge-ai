@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Briefcase, RefreshCw, Sparkles } from "lucide-react";
+import { Briefcase, RefreshCw, Sparkles, Lock, BookmarkPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 import { JobFeed, FeedSkeleton } from "@/components/jobs/job-feed";
@@ -44,6 +46,7 @@ function formatTimeAgo(iso: string): string {
 }
 
 export function JobsClient({ user }: JobsClientProps) {
+  const isPro = user.subscriptionPlan !== "FREE";
   const [status, setStatus] = useState<Status>("idle");
   const [jobs, setJobs] = useState<ScoredJob[]>([]);
   const [query, setQuery] = useState<QuerySummary | null>(null);
@@ -149,6 +152,24 @@ export function JobsClient({ user }: JobsClientProps) {
   }
 
   async function handleToggleSave(job: ScoredJob) {
+    // Plan gate: Smart Job Search "save" is a Pro feature. Free users can
+    // browse and apply externally via the deep links, but cannot keep a
+    // private shortlist of saved jobs.
+    if (!isPro) {
+      toast.error("Saving jobs is a Pro feature.", {
+        description:
+          "Subscribe to keep a private shortlist of jobs matched to your resume.",
+        action: {
+          label: "Unlock from ₹249",
+          onClick: () => {
+            window.location.href = "/billing?plan=TRIAL";
+          },
+        },
+        duration: 8000,
+      });
+      return;
+    }
+
     setSavingId(job.externalId);
     const wasSaved = savedIds.has(job.externalId);
     // Optimistic update
@@ -221,9 +242,52 @@ export function JobsClient({ user }: JobsClientProps) {
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
           <Briefcase className="h-7 w-7 text-primary" />
           Smart Job Discovery
+          {!isPro && (
+            <Badge variant="outline" className="ml-1 text-[10px]">
+              <Lock className="h-2.5 w-2.5 mr-1" />
+              Save is Pro
+            </Badge>
+          )}
         </h1>
         <p className="mt-1 text-muted-foreground">{headerSubtitle}</p>
       </motion.div>
+
+      {/* Free-tier upsell: browse freely, save with Pro */}
+      {!isPro && (status === "ready" || status === "empty") && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4"
+        >
+          <Card className="p-4 border-primary/20 bg-gradient-to-r from-indigo-50/60 to-purple-50/60">
+            <div className="flex items-start gap-3 flex-wrap">
+              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <BookmarkPlus className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <p className="text-sm font-semibold text-slate-900">
+                  Save your favourites with Pro
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Free users can browse and apply directly. Pro users get a
+                  private shortlist, AI match scores, and unlimited saves.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" asChild>
+                  <Link href="/billing?plan=TRIAL">
+                    <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                    Try 7 days — ₹249
+                  </Link>
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <Link href="/billing?plan=ANNUAL">Yearly ₹1,499</Link>
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Stale-cache banner */}
       {cachedAt && (status === "ready" || status === "empty") && (

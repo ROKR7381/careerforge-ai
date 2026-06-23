@@ -724,14 +724,20 @@ export function ResumeBuilderClient({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => downloadAsWord(resume)}
+                onClick={handleDownloadWord}
+                title={
+                  user.subscriptionPlan === "FREE"
+                    ? "Pro feature — unlock from ₹249"
+                    : "Download as Word"
+                }
               >
                 <FileText className="h-3.5 w-3.5 mr-1" /> Word
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => downloadPlainText(resume)}
+                onClick={handleDownloadTxt}
+                title="Plain text — always free"
               >
                 <Download className="h-3.5 w-3.5 mr-1" /> TXT
               </Button>
@@ -808,6 +814,7 @@ export function ResumeBuilderClient({
   }
 
   async function handleExportHtml() {
+    if (!requirePaidPlan("download your resume as HTML")) return;
     try {
       const res = await fetch("/api/export", {
         method: "POST",
@@ -833,16 +840,64 @@ export function ResumeBuilderClient({
   }
 
   async function handleExportPdf() {
+    if (!requirePaidPlan("download your resume as PDF")) return;
     try {
-      toast.info("Generating PDF — multi-page resumes may take a few seconds…");
+      // We use the browser's native print engine to produce the PDF — this
+      // sidesteps html2canvas's inability to parse modern CSS color
+      // functions (lab / oklch / lch / color) that Tailwind v4 emits.
+      // The user picks "Save as PDF" in the print dialog to get the file.
+      toast.info("Opening print dialog — pick “Save as PDF” as the destination.", {
+        description: "Chromium, Safari and Firefox all support this. The PDF will match the screen preview 1:1.",
+        duration: 6000,
+      });
       await downloadResumePdf({
         elementId: "resume-preview",
         filename: title || "Resume",
       });
-      toast.success("PDF downloaded!");
     } catch (err: any) {
       console.error("PDF export failed:", err);
       toast.error(err?.message || "PDF export failed. Try the Print button.");
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Plan gating helper
+  // ------------------------------------------------------------------
+  // Free users can build, edit, and preview their resume — but every
+  // download surface (PDF, Word, Excel, HTML) and gated feature (LinkedIn
+  // import, Smart Job Search save, full ATS report) routes through here.
+  // We surface a high-intent upgrade CTA pointing to the ₹249 trial
+  // because that's the lowest friction paid tier.
+  function requirePaidPlan(action: string): boolean {
+    if (user.subscriptionPlan !== "FREE") return true;
+    toast.error(
+      `${action[0].toUpperCase()}${action.slice(1)} is a Pro feature.`,
+      {
+        description:
+          "Start a 7-day Pro trial for just ₹249 — no auto-charge, cancel anytime.",
+        action: {
+          label: "Unlock from ₹249",
+          onClick: () => {
+            window.location.href = "/billing?plan=TRIAL";
+          },
+        },
+        duration: 8000,
+      }
+    );
+    return false;
+  }
+
+  // Expose the gating helper so JSX-level handlers can use it without
+  // having to inline the same toast logic in every onClick.
+  function handleDownloadWord() {
+    if (!requirePaidPlan("download your resume as Word")) return;
+    downloadAsWord(resume);
+  }
+
+  // Free users can still export plain text — it's just the underlying data,
+  // not a branded output. This gives free users something tangible without
+  // cannibalising the paid download funnel (PDF / Word / Excel).
+  function handleDownloadTxt() {
+    downloadPlainText(resume);
   }
 }

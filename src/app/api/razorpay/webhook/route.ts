@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { RAZORPAY_PLANS, resolveSubscriptionPlan } from "@/lib/razorpay";
 import crypto from "crypto";
 
 export async function POST(req: Request) {
@@ -36,17 +37,21 @@ export async function POST(req: Request) {
       case "payment.captured": {
         const payment = event.payload.payment.entity;
         const userId = payment.notes?.userId;
-        const planId = payment.notes?.planId;
+        const planId = payment.notes?.planId as keyof typeof RAZORPAY_PLANS | undefined;
 
-        if (userId) {
-          const subscriptionPlan =
-            planId === "ANNUAL" ? "PREMIUM_ANNUAL" : "PREMIUM_MONTHLY";
+        if (userId && planId && planId in RAZORPAY_PLANS) {
+          const plan = RAZORPAY_PLANS[planId];
+          const subscriptionPlan = resolveSubscriptionPlan(planId);
+          const periodEnd = new Date(
+            Date.now() + plan.durationDays * 24 * 60 * 60 * 1000
+          );
 
           await prisma.user.update({
             where: { id: userId },
             data: {
-              subscriptionPlan: subscriptionPlan,
+              subscriptionPlan,
               subscriptionStatus: "ACTIVE",
+              subscriptionEnd: periodEnd,
             },
           });
 
@@ -55,19 +60,17 @@ export async function POST(req: Request) {
             update: {
               plan: subscriptionPlan,
               status: "ACTIVE",
-              currentPeriodEnd: new Date(
-                Date.now() +
-                  (planId === "ANNUAL" ? 365 : 30) * 24 * 60 * 60 * 1000
-              ),
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: periodEnd,
+              cancelAtPeriodEnd: plan.period === "trial",
             },
             create: {
               userId,
               plan: subscriptionPlan,
               status: "ACTIVE",
-              currentPeriodEnd: new Date(
-                Date.now() +
-                  (planId === "ANNUAL" ? 365 : 30) * 24 * 60 * 60 * 1000
-              ),
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: periodEnd,
+              cancelAtPeriodEnd: plan.period === "trial",
             },
           });
         }
@@ -79,7 +82,8 @@ export async function POST(req: Request) {
         break;
       }
 
-      case "subscription.cancelled": {
+      case "subscription.cancelled":
+      case "subscription.expired": {
         const subscription = event.payload.subscription.entity;
         const userId = subscription.notes?.userId;
         if (userId) {
@@ -87,7 +91,8 @@ export async function POST(req: Request) {
             where: { id: userId },
             data: {
               subscriptionPlan: "FREE",
-              subscriptionStatus: "CANCELED",
+              subscriptionStatus: "EXPIRED",
+              subscriptionEnd: new Date(),
             },
           });
         }

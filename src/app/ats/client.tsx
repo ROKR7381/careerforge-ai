@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, Sparkles, Loader2, FileText, Target, CheckCircle,
   AlertTriangle, Lightbulb, RefreshCw, BarChart3, Search, Zap,
-  Gauge, BookOpen, Download, Printer, ExternalLink, Wand2,
+  Gauge, BookOpen, Download, Printer, ExternalLink, Wand2, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +42,7 @@ const sectionConfig = [
 ];
 
 export function AtsClient({ user }: Props) {
+  const isPro = user.subscriptionPlan !== "FREE";
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [result, setResult] = useState<AtsScoreResult | null>(null);
@@ -53,6 +55,30 @@ export function AtsClient({ user }: Props) {
   const [streamingPhase, setStreamingPhase] = useState<"idle" | "streaming" | "parsing" | "done">("idle");
   const fileRef = useRef<HTMLInputElement>(null);
   const [parsingFile, setParsingFile] = useState(false);
+
+  // Free users see the overall score + top 3 issues. The full breakdown,
+  // full strengths/weaknesses list, and the AI "Enhance" action are
+  // gated behind Pro — these are the features that move the needle on
+  // interview callbacks.
+  const FREE_TEASER_LIMIT = 3;
+
+  // Convenience getters that respect the plan gate.
+  const visibleSections = isPro
+    ? result?.sections
+    : result
+    ? Object.fromEntries(
+        Object.entries(result.sections).slice(0, FREE_TEASER_LIMIT)
+      )
+    : undefined;
+  const visibleStrengths = isPro
+    ? result?.strengths ?? []
+    : (result?.strengths ?? []).slice(0, FREE_TEASER_LIMIT);
+  const visibleWeaknesses = isPro
+    ? result?.weaknesses ?? []
+    : (result?.weaknesses ?? []).slice(0, FREE_TEASER_LIMIT);
+  const visibleSuggestions = isPro
+    ? result?.suggestions ?? []
+    : (result?.suggestions ?? []).slice(0, FREE_TEASER_LIMIT);
 
   async function scanResume() {
     if (!resumeText || resumeText.trim().length < 20) {
@@ -306,9 +332,40 @@ export function AtsClient({ user }: Props) {
                           <h2 className="text-lg font-bold">ATS Score</h2>
                           <Badge variant={result.overall >= 70 ? "success" : result.overall >= 50 ? "warning" : "destructive"} className="text-xs">{getScoreLabel(result.overall)}</Badge>
                         </div>
-                        <Button onClick={enhanceWithResumeAI} disabled={enhancing} size="sm" className="bg-gradient-to-r from-emerald-500 to-teal-500 mt-2">
-                          {enhancing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Wand2 className="mr-1.5 h-4 w-4" />}
-                          {enhancing ? "Enhancing..." : "Enhance with ResumeAI"}
+                        <Button
+                          onClick={() => {
+                            if (!isPro) {
+                              toast.error("AI enhancement is a Pro feature.", {
+                                description:
+                                  "Unlock the 7-day Pro trial for ₹249 to enhance this resume with AI.",
+                                action: {
+                                  label: "Unlock from ₹249",
+                                  onClick: () => {
+                                    window.location.href = "/billing?plan=TRIAL";
+                                  },
+                                },
+                                duration: 8000,
+                              });
+                              return;
+                            }
+                            enhanceWithResumeAI();
+                          }}
+                          disabled={enhancing}
+                          size="sm"
+                          className="bg-gradient-to-r from-emerald-500 to-teal-500 mt-2"
+                        >
+                          {enhancing ? (
+                            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                          ) : isPro ? (
+                            <Wand2 className="mr-1.5 h-4 w-4" />
+                          ) : (
+                            <Lock className="mr-1.5 h-4 w-4" />
+                          )}
+                          {enhancing
+                            ? "Enhancing..."
+                            : isPro
+                            ? "Enhance with ResumeAI"
+                            : "Unlock AI Enhance"}
                         </Button>
                       </div>
                     </div>
@@ -317,10 +374,20 @@ export function AtsClient({ user }: Props) {
 
                 {/* Score Breakdown */}
                 <Card>
-                  <CardHeader className="pb-3"><CardTitle className="text-sm">Score Breakdown</CardTitle></CardHeader>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center justify-between">
+                      <span>Score Breakdown</span>
+                      {!isPro && (
+                        <Badge variant="outline" className="text-[10px]">
+                          <Lock className="h-2.5 w-2.5 mr-1" />
+                          Free preview
+                        </Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
                   <CardContent className="space-y-3">
                     {sectionConfig.map((sec) => {
-                      const section = result.sections[sec.key];
+                      const section = visibleSections?.[sec.key];
                       if (!section) return null;
                       const pct = Math.round((section.score / section.max) * 100);
                       const Icon = sec.icon;
@@ -342,25 +409,54 @@ export function AtsClient({ user }: Props) {
 
                 {/* Strengths + Weaknesses compact */}
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {result.strengths.length > 0 && (
+                  {visibleStrengths.length > 0 && (
                     <Card>
                       <CardHeader className="pb-2"><CardTitle className="text-xs flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-green-500" /> Strengths</CardTitle></CardHeader>
-                      <CardContent><ul className="space-y-0.5">{result.strengths.map((s, i) => <li key={i} className="text-xs text-muted-foreground flex gap-1"><span className="text-green-500">✓</span>{s}</li>)}</ul></CardContent>
+                      <CardContent><ul className="space-y-0.5">{visibleStrengths.map((s, i) => <li key={i} className="text-xs text-muted-foreground flex gap-1"><span className="text-green-500">✓</span>{s}</li>)}</ul></CardContent>
                     </Card>
                   )}
-                  {result.weaknesses.length > 0 && (
+                  {visibleWeaknesses.length > 0 && (
                     <Card>
                       <CardHeader className="pb-2"><CardTitle className="text-xs flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> Improve</CardTitle></CardHeader>
-                      <CardContent><ul className="space-y-0.5">{result.weaknesses.map((w, i) => <li key={i} className="text-xs text-muted-foreground flex gap-1"><span className="text-amber-500">→</span>{w}</li>)}</ul></CardContent>
+                      <CardContent><ul className="space-y-0.5">{visibleWeaknesses.map((w, i) => <li key={i} className="text-xs text-muted-foreground flex gap-1"><span className="text-amber-500">→</span>{w}</li>)}</ul></CardContent>
                     </Card>
                   )}
                 </div>
 
                 {/* Suggestions */}
-                {result.suggestions.length > 0 && (
+                {visibleSuggestions.length > 0 && (
                   <Card className="bg-gradient-to-br from-emerald-50/50 to-teal-50/50 border-emerald-200/50">
                     <CardHeader className="pb-2"><CardTitle className="text-xs flex items-center gap-1"><Lightbulb className="h-3.5 w-3.5 text-amber-500" /> Suggestions</CardTitle></CardHeader>
-                    <CardContent><ul className="space-y-1">{result.suggestions.map((sg, i) => <li key={i} className="text-xs text-muted-foreground flex gap-1"><span className="text-emerald-500 font-bold">{i + 1}.</span>{sg}</li>)}</ul></CardContent>
+                    <CardContent><ul className="space-y-1">{visibleSuggestions.map((sg, i) => <li key={i} className="text-xs text-muted-foreground flex gap-1"><span className="text-emerald-500 font-bold">{i + 1}.</span>{sg}</li>)}</ul></CardContent>
+                  </Card>
+                )}
+
+                {/* Pro upsell — shown only when the report is truncated */}
+                {!isPro && result && (
+                  <Card className="border-2 border-primary/30 bg-gradient-to-br from-indigo-50/60 to-purple-50/60">
+                    <CardContent className="p-5 text-center">
+                      <Lock className="h-6 w-6 text-primary mx-auto mb-2" />
+                      <h3 className="font-semibold text-sm mb-1">
+                        You're seeing a free preview
+                      </h3>
+                      <p className="text-xs text-muted-foreground mb-3 max-w-sm mx-auto">
+                        Unlock the full ATS report, AI-powered resume rewrite, and
+                        every fix recommendation.
+                      </p>
+                      <div className="flex items-center justify-center gap-2 flex-wrap">
+                        <Button size="sm" asChild>
+                          <Link href="/billing?plan=TRIAL">
+                            <Zap className="mr-1.5 h-4 w-4" />
+                            Try Pro — 7 days for ₹249
+                          </Link>
+                        </Button>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href="/billing?plan=ANNUAL">
+                            See yearly plan
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
                   </Card>
                 )}
               </motion.div>
