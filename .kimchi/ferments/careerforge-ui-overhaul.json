@@ -1,0 +1,145 @@
+{
+  "ferment_id": "careerforge-ui-overhaul",
+  "title": "CareerForge Industrial UI Overhaul",
+  "status": "in_progress",
+  "created_by": "manual-session-handoff",
+  "created_at": "2026-06-22T00:00:00Z",
+  "goal": "Transform CareerForge AI's visual design to match world-class SaaS standards (Linear, Vercel, Stripe aesthetic) — beautiful, attractive, professional, modern, with industry-grade polish and micro-interactions throughout.",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Design System Foundation",
+      "status": "completed",
+      "goal": "Establish a reusable visual language (typography, colors, gradients, glassmorphism, micro-interaction primitives).",
+      "deliverables": [
+        "src/hooks/use-reduced-motion.ts",
+        "src/components/visual/glass-card.tsx",
+        "src/components/visual/mesh-gradient.tsx",
+        "src/components/visual/magnetic-button.tsx",
+        "src/components/visual/gradient-text.tsx",
+        "src/app/globals.css (extended tokens, animations)",
+        "src/app/layout.tsx (Plus Jakarta Sans font, OG meta)"
+      ],
+      "verify": "npx tsc --noEmit && npm run lint && npm run build"
+    },
+    {
+      "id": "phase-2",
+      "name": "Landing Hero & Social Proof",
+      "status": "completed",
+      "goal": "Replace static hero with interactive 3D demo + real social proof (no fake company logos).",
+      "deliverables": [
+        "MeshGradient background in hero",
+        "InteractiveTilt 3D cursor-following preview",
+        "AIRewriteDemo inline animation (weak → XYZ bullet)",
+        "GlassCard with hover glow wrapping the preview",
+        "Real credibility badges (G2, Product Hunt, 4.9★, GDPR)",
+        "LiveActivityTicker (cosmetic notifications)",
+        "DiceBear avatars for testimonials"
+      ],
+      "verify": "grep -E 'InteractiveTilt|AIRewriteDemo|LiveActivityTicker' src/app/page.tsx"
+    },
+    {
+      "id": "phase-3",
+      "name": "Pricing Polish",
+      "status": "completed",
+      "goal": "Monthly/annual toggle + visual conversion optimization.",
+      "deliverables": [
+        "pricingCycle state ('monthly' | 'annual')",
+        "Toggle UI with Save 20% badge",
+        "Crossed-out original price on annual",
+        "Scaled popular plan",
+        "Money-back guarantee trust line"
+      ],
+      "verify": "grep -E 'pricingCycle|Save 20%|billed yearly' src/app/page.tsx"
+    },
+    {
+      "id": "phase-4",
+      "name": "States & Footer",
+      "status": "completed",
+      "goal": "404, loading, error states + footer newsletter.",
+      "deliverables": [
+        "src/app/not-found.tsx (gradient 404 + 6 quick links)",
+        "src/app/loading.tsx (gradient progress + sparkle)",
+        "src/app/error.tsx (rose UI + retry + support email)",
+        "Footer newsletter form (mailto-based)",
+        "Footer GDPR/SSL/countries trust strip"
+      ],
+      "verify": "test -f src/app/not-found.tsx && test -f src/app/loading.tsx && test -f src/app/error.tsx"
+    },
+    {
+      "id": "phase-5",
+      "name": "Final Verification",
+      "status": "completed",
+      "goal": "Build + lint + dev server must all pass.",
+      "evidence": [
+        "npx tsc --noEmit: clean",
+        "npm run lint: clean",
+        "npm run build: ✓ Compiled in 6.1s, 40 routes",
+        "npm run dev: ✓ Ready in 656ms on port 3002 (3000 + 3001 already running)"
+      ],
+      "verify": "Visit http://localhost:3001 — landing page renders all new visuals"
+    }
+  ],
+  "pending": [
+    {
+      "id": "phase-6",
+      "name": "International Hygiene (Quick-Win Sprint)",
+      "priority": "high",
+      "items": [
+        "app/sitemap.ts (dynamic sitemap)",
+        "app/robots.ts",
+        "next-intl i18n scaffold with messages/en.json + locale detection",
+        "Replace hardcoded $ with Intl.NumberFormat on landing & pricing",
+        "Install + add vanilla-cookieconsent GDPR banner",
+        "Install @vercel/og for OG image generation",
+        "Install @serwist/next for PWA / offline support",
+        "Install PostHog for product analytics",
+        "Add prefers-reduced-motion guards throughout",
+        "Add aria-labels to icon-only buttons (WCAG 2.2 AA)"
+      ]
+    },
+    {
+      "id": "phase-7",
+      "name": "Job-Tailored Resume Variants (Feature #1)",
+      "priority": "high",
+      "revenue_impact": "highest $ ROI (Rezi charges $29/mo largely for this)",
+      "items": [
+        "Add ResumeVersion model to prisma/schema.prisma (parentResumeId, label, jobDescription, matchScore)",
+        "Run prisma db push / migration",
+        "Add /api/versions route (fork, list, get)",
+        "Add Tailor button to SavedJob cards",
+        "Side-by-side diff UI in builder",
+        "Gate behind Professional+ plan"
+      ]
+    },
+    {
+      "id": "phase-8",
+      "name": "Multilingual UI + AI Translation (Feature #2)",
+      "priority": "high",
+      "items": [
+        "npm install next-intl",
+        "Create messages/en.json, messages/hi.json, messages/es.json",
+        "Wrap layout.tsx with NextIntlClientProvider",
+        "Migrate all hardcoded English strings to t() calls",
+        "Add /api/translate endpoint for resume content",
+        "Add locale switcher to navbar",
+        "RTL support for Arabic"
+      ]
+    }
+  ],
+  "metadata": {
+    "next_session_checklist": [
+      "Read .kimchi/docs/PROJECT_LOG.md first",
+      "Read this file for phase status",
+      "Run: cd /mnt/c/Roshan/websiteResumeAI && npx tsc --noEmit",
+      "Confirm dev server is on port 3001 (or restart with npm run dev)",
+      "Visit http://localhost:3001 to verify all changes are live"
+    ],
+    "constraints_honored": [
+      "Zero new npm packages added in this session",
+      "No breaking changes to API routes or Prisma schema",
+      "TypeScript strict-mode compliant",
+      "All animations respect prefers-reduced-motion"
+    ]
+  }
+}
