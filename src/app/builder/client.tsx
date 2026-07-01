@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 import {
   Save,
   Sparkles,
@@ -41,6 +42,7 @@ import { ResumePreview } from "@/components/resume/preview";
 import { ResumeScoreWidget } from "@/components/resume/resume-score-widget";
 import { downloadPlainText, downloadAsWord } from "@/lib/export-formats";
 import { downloadResumePdf, estimatePageCount } from "@/lib/pdf-export";
+import { ResumePDF } from "@/components/resume/ResumePDF";
 import { ResumeFormPersonalInfo } from "@/components/resume/form-personal-info";
 import { ResumeFormExperience } from "@/components/resume/form-experience";
 import { ResumeFormEducation } from "@/components/resume/form-education";
@@ -314,10 +316,10 @@ export function ResumeBuilderClient({
       <div
         className={`${
           showPreview ? "w-[42%]" : "w-full"
-        } overflow-y-auto border-r border-border bg-white no-print`}
+        } overflow-y-auto border-r border-white/20 bg-white/70 backdrop-blur-xl shadow-hd no-print`}
       >
         {/* Toolbar */}
-        <div className="sticky top-0 z-10 glass border-b border-border px-4 py-3">
+        <div className="sticky top-0 z-10 glass border-b border-white/20 px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Input
@@ -689,16 +691,18 @@ export function ResumeBuilderClient({
         )}
       </div>
 
-      {/* Right Panel — Live Preview */}
+      {/* Right Panel — Live HD Preview */}
       {showPreview && (
-        <div className="flex-1 overflow-y-auto bg-muted/30 p-6">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 p-6">
           <div className="sticky top-0 z-10 mb-4 flex items-center justify-between no-print">
-            <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              Live Preview — <span className="capitalize">{template}</span>
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                Live HD Preview
+              </span>
               <Badge variant="secondary" className="text-[10px] font-semibold">
                 {pageCount} {pageCount === 1 ? "page" : "pages"}
               </Badge>
-            </h3>
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -714,13 +718,17 @@ export function ResumeBuilderClient({
               >
                 <Download className="h-3.5 w-3.5 mr-1" /> HTML
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExportPdf()}
+              <PDFDownloadLink
+                document={<ResumePDF data={resume} />}
+                fileName={`${resume.personal_info.full_name || "resume"}.pdf`}
               >
-                <FileText className="h-3.5 w-3.5 mr-1" /> PDF
-              </Button>
+                {({ loading }) => (
+                  <Button variant="default" size="sm" disabled={loading} className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-vibrant hover:shadow-vibrant hover:scale-[1.02] active:scale-95 transition-all">
+                    <Download className="h-3.5 w-3.5 mr-1" />
+                    {loading ? "Processing HD PDF..." : "HD PDF"}
+                  </Button>
+                )}
+              </PDFDownloadLink>
               <Button
                 variant="outline"
                 size="sm"

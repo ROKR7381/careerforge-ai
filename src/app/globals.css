@@ -78,6 +78,10 @@
   --shadow-glow-accent: 0 0 0 1px rgba(249, 115, 22, 0.15), 0 8px 32px rgba(249, 115, 22, 0.22);
   --shadow-elevated: 0 24px 48px -12px rgba(15, 23, 42, 0.18);
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+
+  /* HD styles */
+  --shadow-hd: 0 0 1px rgba(0,0,0,0.1), 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  --shadow-vibrant: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
 }
 
 /* =========================================================================
