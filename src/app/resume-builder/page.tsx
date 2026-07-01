@@ -1,9 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import { PDFDownloadLink } from "@react-pdf/renderer";
 import { ModernTemplate } from "@/components/resume/ModernTemplate";
+
+const PDFDownloadLink = dynamic(
+  () => import("@react-pdf/renderer").then((mod) => mod.PDFDownloadLink),
+  { ssr: false }
+);
 import {
   Download,
   Layout,
