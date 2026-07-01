@@ -7,6 +7,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"] ?? "postgresql://postgres:vCOD5QUHzgAmzuJ8@db.rowicvotkrffcfvligwb.supabase.co:5432/postgres?sslmode=require&connect_timeout=10",
+    url: process.env["DATABASE_URL"]!,
   },
 });
